@@ -16,6 +16,9 @@
 from __future__ import unicode_literals
 
 from storops.unity.resource import UnityResource
+from storops.exception import UnityResourceNotFoundError, \
+    UnityResourceNotSupportedError
+
 
 __author__ = 'Cedric Zhuang'
 
@@ -29,7 +32,14 @@ class UnityType(UnityResource):
 
     def _get_raw_resource(self):
         url = '/api/types/{}'.format(self._id)
-        return self._cli.rest_get(url, fields=self._fields)
+        resp = self._cli.rest_get(url, fields=self._fields)
+        try:
+            # The only known exception is UnityResourceNotFoundError
+            resp.raise_if_err()
+        except UnityResourceNotFoundError:
+            # We translate the type not found error as not supported error
+            raise UnityResourceNotSupportedError("Resource is not supported.")
+        return resp
 
     @property
     def fields(self):
